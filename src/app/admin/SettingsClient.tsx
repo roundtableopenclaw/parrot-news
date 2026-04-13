@@ -29,6 +29,7 @@ export function SettingsClient() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
@@ -48,6 +49,18 @@ export function SettingsClient() {
   }, []);
 
   const canSave = useMemo(() => !!settings && !saving, [settings, saving]);
+
+  async function readApiError(res: Response): Promise<string> {
+    const text = await res.text();
+    try {
+      const j = JSON.parse(text) as { error?: string; detail?: string };
+      if (j.detail) return j.detail.slice(0, 500);
+      if (j.error) return j.error;
+    } catch {
+      /* plain text */
+    }
+    return text.slice(0, 500) || `HTTP ${res.status}`;
+  }
 
   async function save() {
     if (!settings) return;
@@ -197,7 +210,7 @@ export function SettingsClient() {
           </div>
         ) : null}
 
-        <div className="mt-5 flex items-center gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             disabled={!canSave}
             onClick={save}
@@ -206,15 +219,37 @@ export function SettingsClient() {
             {saving ? "Saving…" : "Save"}
           </button>
           <button
+            disabled={generating}
+            onClick={() => {
+              setGenerating(true);
+              setError(null);
+              fetch("/api/jobs/generate/today", { method: "POST" })
+                .then(async (r) => {
+                  if (!r.ok) throw new Error(await readApiError(r));
+                  return r.json();
+                })
+                .then(() => refresh())
+                .catch((e) => setError(e instanceof Error ? e.message : "Generate failed"))
+                .finally(() => setGenerating(false));
+            }}
+            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          >
+            {generating ? "Generating…" : "Generate pipeline today"}
+          </button>
+          <button
+            disabled={generating}
             onClick={() =>
               fetch("/api/jobs/ingest/rss", { method: "POST" })
-                .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Ingest failed"))))
+                .then(async (r) => {
+                  if (!r.ok) throw new Error(await readApiError(r));
+                  return r.json();
+                })
                 .then(() => refresh())
-                .catch((e) => setError(e.message))
+                .catch((e) => setError(e instanceof Error ? e.message : "Ingest failed"))
             }
-            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-200 hover:bg-white/5"
+            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-200 hover:bg-white/5 disabled:opacity-50"
           >
-            Ingest RSS now
+            Ingest RSS only
           </button>
           <button
             onClick={() => refresh().catch((e) => setError(e.message))}
@@ -223,6 +258,11 @@ export function SettingsClient() {
             Refresh
           </button>
         </div>
+        <p className="mt-3 text-xs text-zinc-500">
+          &quot;Generate pipeline today&quot; runs ingest → process → script → audio for the current
+          Oslo calendar date (same as cron). Requires OpenAI and Blob; skips if today is already
+          published.
+        </p>
       </div>
     </div>
   );

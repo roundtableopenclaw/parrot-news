@@ -16,7 +16,7 @@ Production-ready MVP for a **single-admin** web app that generates one daily **S
 - **Cron scaffolding** (DST-safe window check) (`GET /api/cron/daily`)
 
 ### MVP UX
-- `/login` → `/admin` (settings dashboard, sources/topics management)
+- `/login` → `/admin` (settings dashboard, sources/topics management, **Generate pipeline today**, episode archive)
 - public feed at `/podcast/rss.xml`
 - transcript per episode at `/episodes/YYYY-MM-DD`
 
@@ -24,7 +24,7 @@ Production-ready MVP for a **single-admin** web app that generates one daily **S
 
 ### 1) Environment variables
 
-Copy `.env.example` to `.env.local` and fill it in.
+Copy `.env.example` to `.env.local` and fill it in. At minimum you need `AUTH_SECRET` (32+ chars), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `DATABASE_URL`. For a full generated episode you also need `OPENAI_API_KEY` and `BLOB_READ_WRITE_TOKEN`.
 
 ### 2) Database (local)
 
@@ -79,7 +79,7 @@ Open `http://localhost:3000` and log in.
 
 ## Manual generation
 
-As admin, you can trigger the pipeline (requires OpenAI + Blob configured):
+As admin, use **Generate pipeline today** on `/admin`, or call the API directly (requires OpenAI + Blob configured):
 - `POST /api/jobs/generate/today`
 
 Or step-by-step:
@@ -87,6 +87,19 @@ Or step-by-step:
 - `POST /api/jobs/process/today`
 - `POST /api/jobs/generate/script`
 - `POST /api/jobs/generate/audio`
+
+## First green run checklist
+
+Use this once per environment (local then production) to confirm the full path works before relying on cron.
+
+1. **Database** — Set `DATABASE_URL`, run `npm run db:migrate` and `npm run db:seed` (or apply migrations in Supabase and seed from your machine against that URL).
+2. **Auth** — Set `AUTH_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`. Start the app, open `/login`, sign in, confirm you reach `/admin`.
+3. **Sources** — Under **Sources**, confirm at least one RSS feed is enabled (seed adds several). Optionally add/remove feeds.
+4. **AI + audio** — Set `OPENAI_API_KEY` and `BLOB_READ_WRITE_TOKEN`. Without both, script or audio steps will fail.
+5. **Generate** — On **Settings**, click **Generate pipeline today** (or `curl -X POST` with your admin session cookie). Wait until it finishes (can take a few minutes).
+6. **Verify** — On **Episodes**, confirm a row for today with status `published`. Open **Page** for that date: audio plays and transcript shows. Open `/podcast/rss.xml` and confirm the item appears in a podcast client.
+7. **Cron (production)** — Set `CRON_SECRET` in Vercel, deploy, confirm `vercel.json` crons are listed under the project. Optionally trigger **Run** on a cron job in the dashboard and check function logs for `/api/cron/daily` (expect `skipped: true` with `outside_window` unless you are inside 06:30–06:44 Europe/Oslo).
+8. **Newsletters (optional)** — Configure Postmark inbound to `POST https://<domain>/api/inbound/email` with header `x-parrot-token: <POSTMARK_INBOUND_TOKEN>`, set `NEWSLETTER_FORWARDING_ADDRESS` for display in admin.
 
 ## Tests
 
