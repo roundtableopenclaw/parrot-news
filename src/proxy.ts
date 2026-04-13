@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { isAuthorizedCronRequest } from "@/lib/cronAuth";
 
 export const config = {
   matcher: ["/", "/admin/:path*", "/api/:path*"],
@@ -27,9 +28,8 @@ async function isAdmin(req: NextRequest): Promise<boolean> {
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow cron-triggered calls without admin cookie.
-  const cron = req.headers.get("x-cron-secret");
-  if (process.env.CRON_SECRET && cron === process.env.CRON_SECRET) {
+  // Allow cron-triggered calls without admin cookie (Bearer or legacy header).
+  if (isAuthorizedCronRequest(req)) {
     return NextResponse.next();
   }
 
