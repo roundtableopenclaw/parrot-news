@@ -27,5 +27,26 @@ describe("podcast rss", () => {
     expect(xml).toContain("<item>");
     expect(xml).toContain("podcast:transcript");
   });
+
+  test("enclosure length uses byte size when provided", () => {
+    const xml = buildPodcastRss({
+      title: "Test",
+      description: "Desc",
+      siteUrl: "https://example.com",
+      feedUrl: "https://example.com/podcast/rss.xml",
+      episodes: [
+        {
+          title: "Ep 1",
+          guid: "guid-1",
+          pubDate: new Date("2026-01-01T00:00:00Z"),
+          audioUrl: "https://cdn.example.com/ep1.mp3",
+          episodeUrl: "https://example.com/episodes/2026-01-01",
+          description: "Hello",
+          enclosureLengthBytes: 42_000,
+        },
+      ],
+    });
+    expect(xml).toContain('length="42000"');
+  });
 });
 

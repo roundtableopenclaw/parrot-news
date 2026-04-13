@@ -111,6 +111,8 @@ npm test
 - Clustering/ranking is heuristic-first for reliability; embeddings/LLM clustering can come later.
 - Script generation + TTS require `OPENAI_API_KEY`.
 - Publishing playable podcast episodes requires `BLOB_READ_WRITE_TOKEN`.
+- If script generation succeeds but audio fails, today’s episode is marked `failed` and the next **Generate pipeline today** or cron run **skips ingest/script** and retries **audio only** (same calendar day).
+- Podcast RSS `enclosure` `length` is the stored MP3 byte size when available (after a successful audio upload).
 
 ## V2 roadmap
 - Better dedupe/clustering (embeddings)

@@ -7,12 +7,28 @@ import { jsonError } from "@/lib/http";
 import { osloDateISO } from "@/lib/time";
 import { OpenAiLlmProvider } from "@/lib/llm/openai";
 import type { LearnerMode, SwedishLevel, ShortlistedStory } from "@/lib/llm/types";
+import { shouldResumeAudioOnly } from "@/lib/pipeline/resume";
 
 export async function POST(req: Request) {
   try {
     await requireAdminOrCron(req);
     const database = db();
     const dateISO = osloDateISO();
+
+    const [existingEp] = await database
+      .select()
+      .from(episodes)
+      .where(eq(episodes.date, dateISO))
+      .limit(1);
+    if (existingEp && shouldResumeAudioOnly(existingEp)) {
+      return NextResponse.json({
+        ok: true,
+        date: dateISO,
+        skipped: true,
+        reason: "resume_audio_only",
+        episodeId: existingEp.id,
+      });
+    }
 
     const settingsRows = await database.select().from(appSettings);
     const asMap: Record<string, unknown> = Object.fromEntries(

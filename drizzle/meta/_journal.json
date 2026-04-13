@@ -8,6 +8,13 @@
       "when": 1774622945100,
       "tag": "0000_tricky_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776053311001,
+      "tag": "0001_add_audio_bytes",
+      "breakpoints": true
     }
   ]
 }

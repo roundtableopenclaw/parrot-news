@@ -44,6 +44,7 @@ export async function GET(req: Request) {
           transcriptUrl,
           durationSeconds:
             r.actualEstimatedMinutes != null ? r.actualEstimatedMinutes * 60 : null,
+          enclosureLengthBytes: r.audioBytes,
         };
       }),
   });

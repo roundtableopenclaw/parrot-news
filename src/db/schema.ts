@@ -177,6 +177,8 @@ export const episodes = pgTable(
     transcriptText: text("transcript_text"),
     summaryText: text("summary_text"),
     audioUrl: text("audio_url"),
+    /** MP3 file size in bytes (RSS enclosure length). */
+    audioBytes: integer("audio_bytes"),
     rssGuid: text("rss_guid"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     debugJson: jsonb("debug_json").notNull().default({}),

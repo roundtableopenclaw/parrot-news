@@ -3,6 +3,8 @@ import { desc } from "drizzle-orm";
 import { db } from "@/db";
 import { episodes } from "@/db/schema";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminEpisodesPage() {
   const database = db();
   const rows = await database
@@ -16,6 +18,7 @@ export default async function AdminEpisodesPage() {
       actualEstimatedMinutes: episodes.actualEstimatedMinutes,
       publishedAt: episodes.publishedAt,
       audioUrl: episodes.audioUrl,
+      audioBytes: episodes.audioBytes,
     })
     .from(episodes)
     .orderBy(desc(episodes.date))
@@ -47,6 +50,7 @@ export default async function AdminEpisodesPage() {
                 <th className="px-4 py-3 font-medium">Level / mode</th>
                 <th className="px-4 py-3 font-medium">Length</th>
                 <th className="px-4 py-3 font-medium">Published</th>
+                <th className="px-4 py-3 font-medium">MP3 bytes</th>
                 <th className="px-4 py-3 font-medium text-right">Links</th>
               </tr>
             </thead>
@@ -80,6 +84,9 @@ export default async function AdminEpisodesPage() {
                   </td>
                   <td className="px-4 py-3 text-zinc-500">
                     {r.publishedAt ? r.publishedAt.toISOString().slice(0, 16).replace("T", " ") : "—"}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-zinc-500">
+                    {r.audioBytes != null ? r.audioBytes.toLocaleString() : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link

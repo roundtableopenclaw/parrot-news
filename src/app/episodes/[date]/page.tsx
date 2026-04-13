@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { episodes, episodeSources, sourceItems } from "@/db/schema";
 
+export const dynamic = "force-dynamic";
+
 export default async function EpisodePage({
   params,
 }: {
