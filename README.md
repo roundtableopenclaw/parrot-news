@@ -73,9 +73,9 @@ Open `http://localhost:3000` and log in.
 - Create a Blob store and set `BLOB_READ_WRITE_TOKEN`.
 
 ### Cron (06:30 Europe/Oslo, DST-safe)
-- `vercel.json` schedules `/api/cron/daily` every 15 minutes.
-- The route **only runs generation between 06:30–06:44 Oslo time**.
-- Set `CRON_SECRET` and Vercel Cron should call with header `x-cron-secret`.
+- `vercel.json` schedules **two** daily GETs to `/api/cron/daily` (`30 4 * * *` and `30 5 * * *` UTC). Exactly one lands at **06:30 Oslo** across CET vs CEST; the other is outside the window and no-ops.
+- The handler **only runs generation between 06:30–06:44 Oslo time**.
+- Set `CRON_SECRET` in Vercel: the platform sends `Authorization: Bearer <CRON_SECRET>`. Internal job calls use the same header (legacy `x-cron-secret` is still accepted).
 
 ## Manual generation
 

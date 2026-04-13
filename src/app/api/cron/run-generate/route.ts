@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { episodes } from "@/db/schema";
+import { isAuthorizedCronRequest } from "@/lib/cronAuth";
 import { jsonError } from "@/lib/http";
 import { osloDateISO } from "@/lib/time";
 
 export async function POST(req: Request) {
   try {
-    const secret = req.headers.get("x-cron-secret") || "";
-    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    if (!isAuthorizedCronRequest(req)) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
@@ -29,8 +29,7 @@ export async function POST(req: Request) {
       return `${u.protocol}//${u.host}`;
     })();
 
-    // Call pipeline endpoints with cron-secret header for auth.
-    const headers = { "x-cron-secret": process.env.CRON_SECRET! };
+    const headers = { authorization: `Bearer ${process.env.CRON_SECRET}` };
 
     const rss = await fetch(`${origin}/api/jobs/ingest/rss`, { method: "POST", headers, cache: "no-store" });
     if (!rss.ok) return NextResponse.json({ error: "rss_ingest_failed" }, { status: 500 });
