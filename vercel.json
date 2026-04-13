@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/run-generate",
+      "schedule": "30 5 * * *"
+    }
+  ]
+}
+
