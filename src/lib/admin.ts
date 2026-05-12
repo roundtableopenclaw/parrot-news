@@ -1,4 +1,5 @@
 import { getAdminSession } from "@/lib/auth";
+import { isAuthorizedCronRequest } from "@/lib/cronAuth";
 
 export async function requireAdmin() {
   const session = await getAdminSession();
@@ -12,8 +13,7 @@ export async function requireAdmin() {
 }
 
 export async function requireAdminOrCron(req: Request) {
-  const cron = req.headers.get("x-cron-secret");
-  if (process.env.CRON_SECRET && cron === process.env.CRON_SECRET) {
+  if (isAuthorizedCronRequest(req)) {
     return { sub: "cron", email: "cron@local" } as const;
   }
   return await requireAdmin();

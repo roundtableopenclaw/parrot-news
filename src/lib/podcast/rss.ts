@@ -10,6 +10,8 @@ export type RssEpisode = {
   transcriptText?: string | null;
   transcriptUrl?: string | null;
   durationSeconds?: number | null;
+  /** RSS enclosure length in bytes (file size). */
+  enclosureLengthBytes?: number | null;
 };
 
 export function buildPodcastRss(input: {
@@ -59,7 +61,7 @@ export function buildPodcastRss(input: {
       .ele("enclosure")
       .att("url", ep.audioUrl)
       .att("type", "audio/mpeg")
-      .att("length", "0")
+      .att("length", String(ep.enclosureLengthBytes ?? 0))
       .up();
     if (ep.durationSeconds != null) {
       item.ele("itunes:duration").txt(String(ep.durationSeconds)).up();

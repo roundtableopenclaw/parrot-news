@@ -49,24 +49,51 @@ export async function POST(req: Request) {
 
     const pathname = `episodes/${dateISO}/briefing.mp3`;
     const audioUrl = await putMp3({ pathname, bytes: audio.mp3 });
+    const audioBytes = audio.mp3.byteLength;
 
     await database
       .update(episodes)
       .set({
         status: "published",
         audioUrl,
+        audioBytes,
         rssGuid: ep.rssGuid || `parrot-news-${dateISO}`,
         publishedAt: new Date(),
         updatedAt: new Date(),
         debugJson: {
           ...(ep.debugJson as Record<string, unknown>),
-          tts: { provider: audio.provider, voice: audio.voice, pathname },
+          tts: { provider: audio.provider, voice: audio.voice, pathname, audioBytes },
         },
       })
       .where(eq(episodes.id, ep.id));
 
-    return NextResponse.json({ ok: true, date: dateISO, audioUrl });
+    return NextResponse.json({ ok: true, date: dateISO, audioUrl, audioBytes });
   } catch (err) {
+    try {
+      const database = db();
+      const dateISO = osloDateISO();
+      const [ep] = await database
+        .select()
+        .from(episodes)
+        .where(eq(episodes.date, dateISO))
+        .limit(1);
+      if (ep && ep.status !== "published") {
+        const message = err instanceof Error ? err.message : String(err);
+        await database
+          .update(episodes)
+          .set({
+            status: "failed",
+            updatedAt: new Date(),
+            debugJson: {
+              ...(ep.debugJson as Record<string, unknown>),
+              lastAudioError: message.slice(0, 2000),
+            },
+          })
+          .where(eq(episodes.id, ep.id));
+      }
+    } catch {
+      /* best-effort */
+    }
     return jsonError(err);
   }
 }

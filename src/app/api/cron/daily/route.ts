@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { episodes } from "@/db/schema";
+import { isAuthorizedCronRequest } from "@/lib/cronAuth";
 import { jsonError } from "@/lib/http";
 import { osloDateISO } from "@/lib/time";
 
@@ -17,8 +18,7 @@ function osloTimeHM(now = new Date()): string {
 
 export async function GET(req: Request) {
   try {
-    const secret = req.headers.get("x-cron-secret") || "";
-    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    if (!isAuthorizedCronRequest(req)) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
@@ -49,7 +49,9 @@ export async function GET(req: Request) {
     // We use a header-based internal auth here.
     const res = await fetch(`${origin}/api/cron/run-generate`, {
       method: "POST",
-      headers: { "x-cron-secret": process.env.CRON_SECRET! },
+      headers: {
+        authorization: `Bearer ${process.env.CRON_SECRET}`,
+      },
       cache: "no-store",
     });
 
