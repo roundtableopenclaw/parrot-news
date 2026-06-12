@@ -10,7 +10,12 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:env": "node scripts/check-env.mjs",
+    "setup:neon": "node scripts/setup-neon.mjs",
+    "check:vercel-env": "node scripts/check-vercel-env.mjs",
+    "smoke": "node scripts/smoke-test.mjs",
+    "smoke:full": "SMOKE_FULL=1 node scripts/smoke-test.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.3.1",

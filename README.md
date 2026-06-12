@@ -55,11 +55,21 @@ npm run dev
 
 Open `http://localhost:3000` and log in.
 
-## Production deployment (Vercel + Supabase + Postmark)
+## Production deployment (Vercel + Neon + Postmark)
 
-### Supabase Postgres
-- Create a Supabase project and get its connection string.
-- Set `DATABASE_URL` in Vercel for Preview/Production.
+The app uses **plain Postgres** (`DATABASE_URL`). **Neon** is recommended (serverless-friendly, works well with Vercel); Supabase Postgres also works if you prefer.
+
+### Neon Postgres (recommended)
+1. Create an API key at [Neon console → API keys](https://console.neon.tech/app/settings/api-keys).
+2. Locally or in **Cursor Cloud Agent secrets**, set `NEON_API_KEY`, then run:
+   ```bash
+   npm run setup:neon
+   ```
+   This creates (or reuses) a `parrot-news` project in `aws-eu-central-1` and writes **`DATABASE_URL`** to `.env.local`.
+3. Run `npm run db:migrate` and `npm run db:seed`.
+4. Copy the same **`DATABASE_URL`** into **Vercel → Environment Variables** (Production + Preview).
+
+Or create a project in the Neon UI and paste the **pooled** connection string as `DATABASE_URL`.
 
 ### Postmark inbound
 - Create a Postmark Server.
@@ -92,7 +102,7 @@ Or step-by-step:
 
 Use this once per environment (local then production) to confirm the full path works before relying on cron.
 
-1. **Database** — Set `DATABASE_URL`, run `npm run db:migrate` and `npm run db:seed` (or apply migrations in Supabase and seed from your machine against that URL).
+1. **Database** — Set `DATABASE_URL` (Neon recommended; `npm run setup:neon` if you have `NEON_API_KEY`), then `npm run db:migrate` and `npm run db:seed`.
 2. **Auth** — Set `AUTH_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`. Start the app, open `/login`, sign in, confirm you reach `/admin`.
 3. **Sources** — Under **Sources**, confirm at least one RSS feed is enabled (seed adds several). Optionally add/remove feeds.
 4. **AI + audio** — Set `OPENAI_API_KEY` and `BLOB_READ_WRITE_TOKEN`. Without both, script or audio steps will fail.
@@ -100,6 +110,18 @@ Use this once per environment (local then production) to confirm the full path w
 6. **Verify** — On **Episodes**, confirm a row for today with status `published`. Open **Page** for that date: audio plays and transcript shows. Open `/podcast/rss.xml` and confirm the item appears in a podcast client.
 7. **Cron (production)** — Set `CRON_SECRET` in Vercel, deploy, confirm `vercel.json` crons are listed under the project. Optionally trigger **Run** on a cron job in the dashboard and check function logs for `/api/cron/daily` (expect `skipped: true` with `outside_window` unless you are inside 06:30–06:44 Europe/Oslo).
 8. **Newsletters (optional)** — Configure Postmark inbound to `POST https://<domain>/api/inbound/email` with header `x-parrot-token: <POSTMARK_INBOUND_TOKEN>`, set `NEWSLETTER_FORWARDING_ADDRESS` for display in admin.
+
+## Ops scripts (agents / CI)
+
+| Command | Purpose |
+|---------|---------|
+| `npm run check:env` | List which env vars are set in `.env.local` / process env |
+| `npm run setup:neon` | Provision Neon DB → write `DATABASE_URL` (needs `NEON_API_KEY`) |
+| `npm run check:vercel-env` | Compare required **key names** on Vercel production (needs `VERCEL_TOKEN` + project id) |
+| `npm run smoke` | Migrate, seed, build, start server, RSS + ingest + `/api/status` |
+| `npm run smoke:full` | Above + full `generate/today` (needs OpenAI + Blob) |
+
+Secrets for cloud agents: **Cursor Dashboard → Cloud Agents → Secrets** (repo-scoped). Do not paste secrets in chat.
 
 ## Tests
 
