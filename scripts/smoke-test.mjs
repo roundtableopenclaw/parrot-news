@@ -57,10 +57,12 @@ async function adminCookie() {
 async function main() {
   run("npm run db:migrate");
   run("npm run db:seed");
-  run("npm run build");
+  run("npm run build", {
+    env: { ...process.env, ...env, NODE_ENV: "production" },
+  });
 
   const child = spawn("npm", ["run", "start", "--", "-p", PORT], {
-    env: { ...process.env, ...env, PORT },
+    env: { ...process.env, ...env, NODE_ENV: "production", PORT },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
